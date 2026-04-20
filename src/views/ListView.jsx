@@ -111,6 +111,7 @@ export default function ListView({
 }) {
   const [statusFilter, setStatusFilter] = useLocalStorageState('beadee-status-filter', '');
   const [typeFilter, setTypeFilter] = useLocalStorageState('beadee-type-filter', '');
+  const [assigneeFilter, setAssigneeFilter] = useLocalStorageState('beadee-assignee-filter', '');
   const [hideClosed, setHideClosed] = useLocalStorageState('beadee-hide-closed', true);
   const [groupByEpic, setGroupByEpic] = useLocalStorageState('beadee-group-by-epic', false);
   const [collapsedEpics, setCollapsedEpics] = useState(() => new Set());
@@ -126,10 +127,18 @@ export default function ListView({
     { onRefreshed },
   );
 
+  const assigneeOptions = useMemo(() => {
+    const names = new Set(issues.map((i) => i.assignee).filter(Boolean));
+    if (assigneeFilter) names.add(assigneeFilter);
+    return [{ label: 'All Assignees', value: '' }, ...[...names].sort().map((a) => ({ label: a, value: a }))];
+  }, [issues, assigneeFilter]);
+
   const displayedIssues = useMemo(() => {
-    if (!hideClosed || statusFilter === 'closed') return issues;
-    return issues.filter((i) => i.status !== 'closed');
-  }, [issues, hideClosed, statusFilter]);
+    let result = issues;
+    if (hideClosed && statusFilter !== 'closed') result = result.filter((i) => i.status !== 'closed');
+    if (assigneeFilter) result = result.filter((i) => i.assignee === assigneeFilter);
+    return result;
+  }, [issues, hideClosed, statusFilter, assigneeFilter]);
 
   const epicGroups = useMemo(() => {
     if (!groupByEpic) return null;
@@ -224,6 +233,18 @@ export default function ListView({
                 </option>
               ))}
             </select>
+            <select
+              className="type-select"
+              aria-label="Filter by assignee"
+              value={assigneeFilter}
+              onChange={(e) => setAssigneeFilter(e.target.value)}
+            >
+              {assigneeOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
             <button
               className={`pill hide-closed-toggle ${hideClosed && statusFilter !== 'closed' ? 'active' : ''}`}
               onClick={() => setHideClosed((v) => !v)}
@@ -255,7 +276,7 @@ export default function ListView({
           {error && <div className="list-state list-error">Error: {error}</div>}
           {!loading && !error && displayedIssues.length === 0 && (
             <div className="list-state list-empty">
-              {search || statusFilter || typeFilter || hideClosed
+              {search || statusFilter || typeFilter || assigneeFilter || hideClosed
                 ? 'No issues match your filters'
                 : 'No issues yet'}
             </div>
