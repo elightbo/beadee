@@ -39,6 +39,11 @@ const TYPE_SHORT = {
 
 const PRIORITY_LABEL = { 0: 'P0', 1: 'P1', 2: 'P2', 3: 'P3', 4: 'P4' }
 
+function isRecentlyUpdated(updatedAt) {
+  if (!updatedAt) return false
+  return Date.now() - new Date(updatedAt).getTime() < 48 * 60 * 60 * 1000
+}
+
 function IssueRow({ issue, selected, onClick, indent }) {
   return (
     <button
@@ -54,6 +59,9 @@ function IssueRow({ issue, selected, onClick, indent }) {
             <span className={`badge-type type-${issue.issue_type}`}>
               {TYPE_SHORT[issue.issue_type] ?? issue.issue_type.toUpperCase()}
             </span>
+          )}
+          {isRecentlyUpdated(issue.updated_at) && (
+            <span className="recent-dot" title="Updated recently" />
           )}
         </span>
       </span>

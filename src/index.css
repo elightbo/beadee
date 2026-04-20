@@ -749,6 +749,15 @@ input::placeholder, textarea::placeholder {
   font-family: 'SFMono-Regular', Consolas, monospace;
 }
 
+.recent-dot {
+  align-self: center;
+  background: var(--accent);
+  border-radius: 50%;
+  flex-shrink: 0;
+  height: 6px;
+  width: 6px;
+}
+
 .badge-type {
   border-radius: 3px;
   font-size: 10px;
