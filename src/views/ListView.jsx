@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Inbox, ChevronRight } from 'lucide-react'
 import { useIssues } from '../hooks/useIssues.js'
 import { useKeyboard } from '../hooks/useKeyboard.js'
@@ -39,16 +39,11 @@ const TYPE_SHORT = {
 
 const PRIORITY_LABEL = { 0: 'P0', 1: 'P1', 2: 'P2', 3: 'P3', 4: 'P4' }
 
-function isRecentlyUpdated(updatedAt) {
-  if (!updatedAt) return false
-  return Date.now() - new Date(updatedAt).getTime() < 48 * 60 * 60 * 1000
-}
-
-function IssueRow({ issue, selected, onClick, indent }) {
+function IssueRow({ issue, selected, onClick, onSeen, indent, isUnread }) {
   return (
     <button
       className={`issue-row ${selected ? 'selected' : ''} status-${issue.status}${indent ? ' issue-row-indented' : ''}`}
-      onClick={onClick}
+      onClick={() => { onClick(); onSeen?.() }}
     >
       <StatusIcon status={issue.status} />
       <span className="issue-row-body">
@@ -60,8 +55,8 @@ function IssueRow({ issue, selected, onClick, indent }) {
               {TYPE_SHORT[issue.issue_type] ?? issue.issue_type.toUpperCase()}
             </span>
           )}
-          {isRecentlyUpdated(issue.updated_at) && (
-            <span className="recent-dot" title="Updated recently" />
+          {isUnread && (
+            <span className="recent-dot" title="Unread" />
           )}
         </span>
       </span>
@@ -118,6 +113,24 @@ export default function ListView({ search, selectedIssueId, onSelectIssue, Detai
   const [collapsedEpics, setCollapsedEpics] = useState(() => new Set())
   const [rawPanelWidth, setListPanelWidth] = useLocalStorageState('beadee-list-panel-width', 320)
   const listPanelWidth = Number(rawPanelWidth) || 320
+
+  const [seenMap, setSeenMap] = useState({})
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('beadee-seen-map')
+      if (saved) setSeenMap(JSON.parse(saved))
+    } catch {}
+  }, [])
+
+  const markSeen = useCallback((issueId, updatedAt) => {
+    if (!issueId || !updatedAt) return
+    setSeenMap(prev => {
+      const next = { ...prev, [issueId]: updatedAt }
+      try { localStorage.setItem('beadee-seen-map', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [])
 
   const { issues, loading, error } = useIssues({
     status: statusFilter,
@@ -259,6 +272,8 @@ export default function ListView({ search, selectedIssueId, onSelectIssue, Detai
                       issue={issue}
                       selected={issue.id === selectedIssueId}
                       onClick={() => onSelectIssue(issue.id === selectedIssueId ? null : issue.id)}
+                      isUnread={!seenMap[issue.id] || (issue.updated_at && issue.updated_at > seenMap[issue.id])}
+                      onSeen={() => markSeen(issue.id, issue.updated_at)}
                       indent
                     />
                   ))}
@@ -272,6 +287,8 @@ export default function ListView({ search, selectedIssueId, onSelectIssue, Detai
                           issue={issue}
                           selected={issue.id === selectedIssueId}
                           onClick={() => onSelectIssue(issue.id === selectedIssueId ? null : issue.id)}
+                          isUnread={!seenMap[issue.id] || (issue.updated_at && issue.updated_at > seenMap[issue.id])}
+                          onSeen={() => markSeen(issue.id, issue.updated_at)}
                         />
                       ))}
                     </div>]
@@ -283,6 +300,8 @@ export default function ListView({ search, selectedIssueId, onSelectIssue, Detai
                   issue={issue}
                   selected={issue.id === selectedIssueId}
                   onClick={() => onSelectIssue(issue.id === selectedIssueId ? null : issue.id)}
+                  isUnread={!seenMap[issue.id] || (issue.updated_at && issue.updated_at > seenMap[issue.id])}
+                  onSeen={() => markSeen(issue.id, issue.updated_at)}
                 />
               ))
           }
