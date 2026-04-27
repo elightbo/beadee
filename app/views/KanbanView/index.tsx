@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useIssues } from '../../hooks/api/useIssues.js';
+import { useMarkSeen } from '../../hooks/api/useMarkSeen.js';
 import IssueCard from '../../components/IssueCard/index.jsx';
 import type { DetailPanelComponent } from '../../components/DetailPanel/index.js';
 import type { Issue } from '../../types.js';
@@ -63,6 +64,18 @@ export default function KanbanView({
 }: KanbanViewProps) {
   const [activeColumn, setActiveColumn] = useState('open');
   const { issues, loading, error } = useIssues({}, { onRefreshed });
+  const { mutate: markSeen } = useMarkSeen();
+
+  const handleSelectIssue = useCallback(
+    (issueId: string | null) => {
+      if (issueId) {
+        const issue = issues.find((i) => i.id === issueId);
+        if (issue) markSeen({ id: issue.id, seen_at: issue.updated_at });
+      }
+      onSelectIssue(issueId);
+    },
+    [issues, onSelectIssue, markSeen],
+  );
 
   const byStatus: Record<string, Issue[]> = {};
   for (const col of COLUMNS) byStatus[col.status] = [];
@@ -98,7 +111,7 @@ export default function KanbanView({
               column={col}
               issues={byStatus[col.status]}
               selectedIssueId={selectedIssueId}
-              onSelectIssue={onSelectIssue}
+              onSelectIssue={handleSelectIssue}
               hidden={activeColumn !== col.id}
             />
           ))}

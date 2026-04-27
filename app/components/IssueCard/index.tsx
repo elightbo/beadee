@@ -29,6 +29,8 @@ export default function IssueCard({ issue, selected, onClick }: IssueCardProps) 
     ? Math.round((epicStatus.closed_children / epicStatus.total_children) * 100)
     : 0;
 
+  const isUnread = issue.updated_at > (issue.metadata?.seen_at ?? '');
+
   return (
     <button className={`issue-card ${selected ? 'selected' : ''}`} onClick={onClick}>
       <div className="issue-card-top">
@@ -51,6 +53,7 @@ export default function IssueCard({ issue, selected, onClick }: IssueCardProps) 
             </span>
           </span>
         )}
+        {isUnread && <span className="card-unread-dot" title="Updated" />}
         {issue.assignee && (
           <span className="card-avatar" title={issue.assignee}>
             {initials(issue.assignee)}
