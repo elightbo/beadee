@@ -5,6 +5,7 @@ import StatusIcon from '../../components/StatusIcon/index.jsx';
 import { PRIORITY_LABEL, TYPE_SHORT } from '../../constants.js';
 import { useEpicStatuses } from '../../hooks/api/useEpicStatuses.js';
 import { useIssues } from '../../hooks/api/useIssues.js';
+import { useMarkSeen } from '../../hooks/api/useMarkSeen.js';
 import { useKeyboard } from '../../hooks/useKeyboard.js';
 import { useLocalStorageState } from '../../hooks/useLocalStorageState.js';
 import type { DetailPanelComponent } from '../../components/DetailPanel/index.js';
@@ -37,9 +38,10 @@ interface IssueRowProps {
   selected: boolean;
   onClick: () => void;
   indent?: boolean;
+  isUnread?: boolean;
 }
 
-function IssueRow({ issue, selected, onClick, indent }: IssueRowProps) {
+function IssueRow({ issue, selected, onClick, indent, isUnread }: IssueRowProps) {
   return (
     <button
       className={`issue-row ${selected ? 'selected' : ''} status-${issue.status}${indent ? ' issue-row-indented' : ''}`}
@@ -55,6 +57,7 @@ function IssueRow({ issue, selected, onClick, indent }: IssueRowProps) {
               {TYPE_SHORT[issue.issue_type] ?? issue.issue_type.toUpperCase()}
             </span>
           )}
+          {isUnread && <span className="recent-dot" title="Updated" />}
         </span>
       </span>
       <span className={`priority-badge p${issue.priority ?? 2}`}>
@@ -158,6 +161,7 @@ export default function ListView({
   const [rawPanelWidth, setListPanelWidth] = useLocalStorageState('beadee-list-panel-width', 320);
   const listPanelWidth = Number(rawPanelWidth) || 320;
 
+  const { mutate: markSeen } = useMarkSeen();
   const listRef = useRef<HTMLDivElement>(null);
 
   const { issues, loading, error } = useIssues(
@@ -362,10 +366,12 @@ export default function ListView({
                           key={issue.id}
                           issue={issue}
                           selected={issue.id === selectedIssueId}
-                          onClick={() =>
-                            onSelectIssue(issue.id === selectedIssueId ? null : issue.id)
-                          }
+                          onClick={() => {
+                            onSelectIssue(issue.id === selectedIssueId ? null : issue.id);
+                            markSeen({ id: issue.id, seen_at: issue.updated_at });
+                          }}
                           indent
+                          isUnread={issue.updated_at > (issue.metadata?.seen_at ?? '')}
                         />
                       ))}
                   </div>
@@ -379,9 +385,11 @@ export default function ListView({
                               key={issue.id}
                               issue={issue}
                               selected={issue.id === selectedIssueId}
-                              onClick={() =>
-                                onSelectIssue(issue.id === selectedIssueId ? null : issue.id)
-                              }
+                              onClick={() => {
+                                onSelectIssue(issue.id === selectedIssueId ? null : issue.id);
+                                markSeen({ id: issue.id, seen_at: issue.updated_at });
+                              }}
+                              isUnread={issue.updated_at > (issue.metadata?.seen_at ?? '')}
                             />
                           ))}
                         </div>,
@@ -393,7 +401,11 @@ export default function ListView({
                   key={issue.id}
                   issue={issue}
                   selected={issue.id === selectedIssueId}
-                  onClick={() => onSelectIssue(issue.id === selectedIssueId ? null : issue.id)}
+                  onClick={() => {
+                    onSelectIssue(issue.id === selectedIssueId ? null : issue.id);
+                    markSeen({ id: issue.id, seen_at: issue.updated_at });
+                  }}
+                  isUnread={issue.updated_at > (issue.metadata?.seen_at ?? '')}
                 />
               ))}
         </div>

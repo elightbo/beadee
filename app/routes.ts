@@ -18,6 +18,7 @@ export default [
   route('api/issues/:id/comments', 'routes/api/issueComments.ts'),
   route('api/issues/:id/children', 'routes/api/issueChildren.ts'),
   route('api/issues/:id/labels', 'routes/api/issueLabels.ts'),
+  route('api/issues/:id/seen', 'routes/api/issueSeen.ts'),
   route('api/deps', 'routes/api/deps.ts'),
   route('api/labels', 'routes/api/labels.ts'),
   route('api/ready', 'routes/api/ready.ts'),
