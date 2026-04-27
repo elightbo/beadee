@@ -265,9 +265,11 @@ export default function ListView({
             ? 0
             : visibleIssues.length - 1
           : Math.max(0, Math.min(visibleIssues.length - 1, selectedIdx + dir));
-      onSelectIssue(visibleIssues[next].id);
+      const issue = visibleIssues[next];
+      onSelectIssue(issue.id);
+      markSeen({ id: issue.id, seen_at: issue.updated_at });
     },
-    [visibleIssues, selectedIdx, onSelectIssue],
+    [visibleIssues, selectedIdx, onSelectIssue, markSeen],
   );
 
   const listKeyBindings = useMemo(
@@ -275,10 +277,14 @@ export default function ListView({
       j: () => navigate(1),
       k: () => navigate(-1),
       Enter: () => {
-        if (selectedIdx !== -1) onSelectIssue(visibleIssues[selectedIdx].id);
+        if (selectedIdx !== -1) {
+          const issue = visibleIssues[selectedIdx];
+          onSelectIssue(issue.id);
+          markSeen({ id: issue.id, seen_at: issue.updated_at });
+        }
       },
     }),
-    [navigate, selectedIdx, visibleIssues, onSelectIssue],
+    [navigate, selectedIdx, visibleIssues, onSelectIssue, markSeen],
   );
   useKeyboard(listKeyBindings);
 
