@@ -1,5 +1,4 @@
-import { bdRun } from '../../../server/bd.js';
-import { suppressWatch } from '../../../server/sse.js';
+import { markSeen } from '../../../server/seen-db.js';
 
 export async function action({
   request,
@@ -15,8 +14,7 @@ export async function action({
   const { id } = params;
   const { seen_at } = (await request.json()) as { seen_at: string };
 
-  suppressWatch();
-  await bdRun(['update', id, '--set-metadata', `seen_at=${seen_at}`], process.cwd());
+  markSeen(id, seen_at);
 
   return Response.json({ ok: true });
 }

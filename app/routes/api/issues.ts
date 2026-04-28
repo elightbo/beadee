@@ -1,4 +1,5 @@
 import { bdRun } from '../../../server/bd.js';
+import { getSeenMap } from '../../../server/seen-db.js';
 import { broadcast, suppressWatch } from '../../../server/sse.js';
 import type { Issue } from '../../types.js';
 
@@ -11,7 +12,19 @@ export async function loader({ request }: { request: Request }) {
   const cwd = process.cwd();
 
   suppressWatch();
-  const issues = (await bdRun(['list', '--all', '--readonly'], cwd)) as Issue[];
+  const rawIssues = (await bdRun(['list', '--all', '--readonly'], cwd)) as Issue[];
+  let seenMap: Record<string, string> = {};
+  try {
+    seenMap = getSeenMap();
+  } catch (err) {
+    console.warn('seen-db unavailable:', err);
+  }
+
+  const issues = rawIssues.map((issue) =>
+    seenMap[issue.id]
+      ? { ...issue, metadata: { ...issue.metadata, seen_at: seenMap[issue.id] } }
+      : issue,
+  );
 
   let result = issues;
   if (status) result = result.filter((i) => i.status === status);
