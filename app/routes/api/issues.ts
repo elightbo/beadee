@@ -1,5 +1,5 @@
 import { bdRun } from '../../../server/bd.js';
-import { getSeenMap } from '../../../server/seen-db.js';
+import { getSeenMap } from '../../../server/local-db.js';
 import { broadcast, suppressWatch } from '../../../server/sse.js';
 import type { Issue } from '../../types.js';
 

@@ -1,4 +1,4 @@
-import { markSeen } from '../../../server/local-db.js';
+import { setPref } from '../../../server/local-db.js';
 
 export async function action({
   request,
@@ -11,13 +11,13 @@ export async function action({
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  const { id } = params;
-  const { seen_at } = (await request.json()) as { seen_at: string };
+  const { key } = params;
+  const { value } = (await request.json()) as { value: string };
 
   try {
-    markSeen(id, seen_at);
+    setPref(key, value);
   } catch {
-    // seen state failing silently is acceptable
+    // pref write failing silently is acceptable
   }
 
   return Response.json({ ok: true });
