@@ -14,7 +14,11 @@ export async function action({
   const { id } = params;
   const { seen_at } = (await request.json()) as { seen_at: string };
 
-  markSeen(id, seen_at);
+  try {
+    markSeen(id, seen_at);
+  } catch {
+    // seen state failing silently is acceptable
+  }
 
   return Response.json({ ok: true });
 }
