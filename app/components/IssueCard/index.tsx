@@ -17,9 +17,27 @@ interface IssueCardProps {
   issue: Issue;
   selected: boolean;
   onClick: () => void;
+  draggable?: boolean;
+  onDragStart?: (id: string) => void;
+  onDragEnd?: () => void;
+  isDropTarget?: boolean;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
 }
 
-export default function IssueCard({ issue, selected, onClick }: IssueCardProps) {
+export default function IssueCard({
+  issue,
+  selected,
+  onClick,
+  draggable = true,
+  onDragStart,
+  onDragEnd,
+  isDropTarget = false,
+  onDragOver,
+  onDrop,
+  onDragLeave,
+}: IssueCardProps) {
   const epicStatuses = useEpicStatuses();
   const epicStatus: EpicStatus | undefined =
     issue.issue_type === 'epic' ? epicStatuses.get(issue.id) : undefined;
@@ -29,8 +47,28 @@ export default function IssueCard({ issue, selected, onClick }: IssueCardProps) 
     ? Math.round((epicStatus.closed_children / epicStatus.total_children) * 100)
     : 0;
 
+  const classNames = ['issue-card', selected ? 'selected' : '', isDropTarget ? 'drop-target' : '']
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <button className={`issue-card ${selected ? 'selected' : ''}`} onClick={onClick}>
+    <button
+      className={classNames}
+      onClick={onClick}
+      draggable={draggable}
+      onDragStart={
+        draggable && onDragStart
+          ? (e) => {
+              e.dataTransfer.effectAllowed = 'move';
+              onDragStart(issue.id);
+            }
+          : undefined
+      }
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragLeave={onDragLeave}
+    >
       <div className="issue-card-top">
         <span className={`priority-badge p${issue.priority ?? 2}`}>
           {PRIORITY_LABEL[issue.priority] ?? 'P2'}

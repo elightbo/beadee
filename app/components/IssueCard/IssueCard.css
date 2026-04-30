@@ -60,3 +60,19 @@
   font-family: 'SFMono-Regular', Consolas, monospace;
   @apply text-[11px];
 }
+
+.issue-card[draggable='true'] {
+  @apply cursor-grab;
+}
+
+.issue-card[draggable='true']:active {
+  @apply cursor-grabbing;
+}
+
+.issue-card.drop-target {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+}
