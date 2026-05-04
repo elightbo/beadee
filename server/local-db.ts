@@ -1,31 +1,34 @@
 import { DatabaseSync } from 'node:sqlite';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 let db: DatabaseSync | null = null;
 
 function getDb(): DatabaseSync {
   if (!db) {
-    db = new DatabaseSync(join(process.cwd(), '.beads', 'beadee.db'));
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY);
-      CREATE TABLE IF NOT EXISTS seen (issue_id TEXT PRIMARY KEY, seen_at TEXT NOT NULL);
-      CREATE TABLE IF NOT EXISTS prefs (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-    `);
+    // process.cwd() must stay inside getDb() — tests mock it per-case via vi.spyOn
+    const beadsDir = join(process.cwd(), '.beads');
+    mkdirSync(beadsDir, { recursive: true });
+    db = new DatabaseSync(join(beadsDir, 'beadee.db'));
     migrate(db);
+    process.once('beforeExit', () => db?.close());
   }
   return db;
 }
 
 function migrate(database: DatabaseSync): void {
-  const row = database.prepare('SELECT version FROM schema_version').get() as
-    | { version: number }
-    | undefined;
-  const version = row?.version ?? 0;
-
-  // Add future migrations here as: if (version < N) { ... }
+  const { user_version: version } = database.prepare('PRAGMA user_version').get() as {
+    user_version: number;
+  };
 
   if (version < 1) {
-    database.prepare('INSERT OR REPLACE INTO schema_version VALUES (1)').run();
+    database.exec('CREATE TABLE prefs (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+    database.exec('PRAGMA user_version = 1');
+  }
+
+  if (version < 2) {
+    database.exec('CREATE TABLE seen (issue_id TEXT PRIMARY KEY, seen_at TEXT NOT NULL)');
+    database.exec('PRAGMA user_version = 2');
   }
 }
 
